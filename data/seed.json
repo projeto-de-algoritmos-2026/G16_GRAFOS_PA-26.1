@@ -1,0 +1,22 @@
+{
+  "vertices": [
+    { "id": "cd-sp", "tipo": "CD", "lat": -23.5505, "lng": -46.6333 },
+    { "id": "cd-rj", "tipo": "CD", "lat": -22.9068, "lng": -43.1729 },
+    { "id": "cd-bh", "tipo": "CD", "lat": -19.9167, "lng": -43.9345 },
+    { "id": "ent-campinas", "tipo": "ENTREGA", "lat": -22.9056, "lng": -47.0608 },
+    { "id": "ent-santos", "tipo": "ENTREGA", "lat": -23.9608, "lng": -46.3334 },
+    { "id": "ent-volta-redonda", "tipo": "ENTREGA", "lat": -22.5231, "lng": -44.1042 },
+    { "id": "ent-juiz-fora", "tipo": "ENTREGA", "lat": -21.7642, "lng": -43.3496 }
+  ],
+  "edges": [
+    { "from": "cd-sp", "to": "ent-campinas" },
+    { "from": "cd-sp", "to": "ent-santos" },
+    { "from": "cd-sp", "to": "cd-rj" },
+    { "from": "cd-rj", "to": "ent-santos" },
+    { "from": "cd-rj", "to": "ent-volta-redonda" },
+    { "from": "cd-rj", "to": "cd-bh" },
+    { "from": "cd-bh", "to": "ent-juiz-fora" },
+    { "from": "cd-bh", "to": "ent-volta-redonda" },
+    { "from": "ent-campinas", "to": "cd-bh" }
+  ]
+}
