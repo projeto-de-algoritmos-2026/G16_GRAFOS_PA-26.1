@@ -111,6 +111,10 @@ export class Graph {
     return g;
   }
 
+  listEdges() {
+    return [...this._edges.values()];
+  }
+
   listCDs() {
     return [...this.vertices.values()].filter((v) => v.tipo === "CD");
   }
