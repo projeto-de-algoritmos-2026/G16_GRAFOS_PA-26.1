@@ -10,7 +10,10 @@
   <body>
     <header>
       <h1>Amazon Logística (simulação)</h1>
-      <p>Fase 2: mapa com nós, estradas e seleção de CD de origem e ponto de entrega.</p>
+      <p>
+        Fase 3: Dijkstra (rota verde), MST Kruskal entre CDs (tracejado dourado), conectividade BFS/DFS no
+        painel abaixo.
+      </p>
       <div class="controls" role="group" aria-label="Seleção de rota">
         <label class="controls__field">
           <span>CD origem</span>
@@ -24,10 +27,27 @@
     </header>
     <div id="map" role="application" aria-label="Mapa da malha logística"></div>
     <footer>
-      <p id="status">Carregando grafo…</p>
+      <section class="metrics" id="metrics" aria-label="Métricas dos algoritmos">
+        <div class="metrics__item">
+          <span class="metrics__label">Dijkstra (menor caminho)</span>
+          <span class="metrics__value" id="metric-dijkstra">—</span>
+        </div>
+        <div class="metrics__item">
+          <span class="metrics__label">MST — Kruskal (só CDs)</span>
+          <span class="metrics__value" id="metric-mst">—</span>
+        </div>
+        <div class="metrics__item">
+          <span class="metrics__label">Alcance (BFS desde todos os CDs)</span>
+          <span class="metrics__value" id="metric-bfs">—</span>
+        </div>
+        <div class="metrics__item">
+          <span class="metrics__label">DFS (a partir do CD de origem)</span>
+          <span class="metrics__value" id="metric-dfs">—</span>
+        </div>
+      </section>
+      <p id="status" class="footer__status">Carregando grafo…</p>
     </footer>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script type="module" src="js/app.js"></script>
   </body>
 </html>
-

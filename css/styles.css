@@ -100,17 +100,51 @@ header p {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
 }
 
+.map-marker-dot--unreachable {
+  opacity: 0.5;
+  box-shadow: 0 0 0 2px rgba(220, 80, 80, 0.85);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #2a3441;
+}
+
+.metrics__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.metrics__label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7c8f;
+}
+
+.metrics__value {
+  font-size: 0.8125rem;
+  color: #c8d4e0;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
 footer {
   padding: 0.75rem 1.25rem 1rem;
   font-size: 0.8125rem;
   color: #8b9aab;
 }
 
-#status {
+.footer__status {
   margin: 0;
   color: #9fd89f;
 }
 
-#status.status--error {
+.footer__status.status--error {
   color: #f0a0a0;
 }

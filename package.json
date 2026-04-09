@@ -1,0 +1,8 @@
+{
+  "name": "projeto-grafos-amazon-logistica",
+  "private": true,
+  "description": "Visualizador de grafo — servidor estático opcional para o mapa (tiles OSM).",
+  "scripts": {
+    "start": "npx --yes serve -l 3000 ."
+  }
+}
