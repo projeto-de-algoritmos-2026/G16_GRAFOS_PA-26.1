@@ -47,6 +47,12 @@ header p {
   color: #8b9aab;
 }
 
+.controls--sim {
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid #2a3441;
+}
+
 .controls__field select {
   min-width: 200px;
   padding: 0.4rem 0.5rem;
@@ -55,6 +61,39 @@ header p {
   background: #1a2330;
   color: #e7ecf1;
   font-size: 0.875rem;
+}
+
+#select-edge {
+  min-width: 280px;
+  max-width: min(420px, 100%);
+}
+
+.btn {
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #3d5266;
+  background: #243044;
+  color: #e7ecf1;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  align-self: flex-end;
+}
+
+.btn:hover {
+  background: #2c3a50;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn--primary {
+  border-color: #3d8c6a;
+  background: #1e4d3d;
+}
+
+.btn--primary:hover {
+  background: #256b54;
 }
 
 #map {
@@ -77,27 +116,54 @@ header p {
   justify-content: center;
 }
 
-.map-marker-dot {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+img.leaflet-marker-icon.map-glyph {
+  object-fit: contain;
+  box-sizing: border-box;
+  image-rendering: auto;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
 }
 
-.map-marker-dot--cd {
-  background: #e8b44c;
+img.leaflet-marker-icon.map-glyph.map-glyph--selected {
+  filter: drop-shadow(0 0 3px rgba(61, 220, 151, 0.9)) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
 }
 
-.map-marker-dot--entrega {
-  background: #5b9bd5;
+img.leaflet-marker-icon.map-glyph.map-glyph--pending {
+  outline: 2px solid #d4a84b;
+  outline-offset: 0;
+  border-radius: 2px;
 }
 
-.map-marker-dot--selected {
-  width: 18px;
-  height: 18px;
-  border-width: 3px;
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.35);
+#map.map--tool-add {
+  cursor: crosshair;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #2a3441;
+}
+
+.metrics__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.metrics__label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7c8f;
+}
+
+.metrics__value {
+  font-size: 0.8125rem;
+  color: #c8d4e0;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 .map-marker-dot--unreachable {

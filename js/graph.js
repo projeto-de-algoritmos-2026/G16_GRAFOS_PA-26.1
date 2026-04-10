@@ -98,6 +98,9 @@ export class Graph {
     const g = new Graph();
     for (const v of data.vertices) {
       g.addVertex(v.id, v.tipo, v.lat, v.lng);
+      if (v.nome != null) {
+        g.vertices.get(v.id).nome = v.nome;
+      }
     }
     for (const e of data.edges) {
       let peso = e.pesoKm;
