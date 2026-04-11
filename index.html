@@ -3,33 +3,21 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amazon Logística — Grafo</title>
+    <title>AMAZONAS EXPRESS</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
-    <link rel="stylesheet" href="css/styles.css?v=glyph" />
+    <link rel="stylesheet" href="css/styles.css?v=route-anim" />
   </head>
   <body>
     <header>
-      <h1>Amazon Logística (simulação)</h1>
-      <p>
-<<<<<<< Updated upstream
-        Fase 3: Dijkstra (rota verde), MST Kruskal entre CDs (tracejado dourado), conectividade BFS/DFS no
-        painel abaixo.
-      </p>
-      <div class="controls" role="group" aria-label="Seleção de rota">
-=======
-        27 CDs nas capitais, entregas espalhadas. <strong>Dijkstra</strong>: escolha CD e entrega e confirme.
-        <strong>MST (Kruskal)</strong> entre CDs só aparece ao clicar no botão. Você pode criar ou remover arestas; os
-        cálculos usam o grafo atual.
-      </p>
-      <div class="controls" role="group" aria-label="Menor caminho (Dijkstra)">
->>>>>>> Stashed changes
+      <h1>AMAZONAS EXPRESS</h1>
+      <div class="controls" role="group" aria-label="Menor caminho entre CDs (Dijkstra)">
         <label class="controls__field">
           <span>CD origem</span>
-          <select id="select-origin" aria-label="Centro de distribuição de origem"></select>
+          <select id="select-origin" aria-label="CD de origem"></select>
         </label>
         <label class="controls__field">
-          <span>Entrega destino</span>
-          <select id="select-dest" aria-label="Ponto de entrega destino"></select>
+          <span>CD destino</span>
+          <select id="select-dest" aria-label="CD de destino"></select>
         </label>
         <button type="button" id="btn-calc-route" class="btn btn--primary">Calcular menor caminho</button>
         <button type="button" id="btn-toggle-mst" class="btn">Mostrar MST (Kruskal)</button>
@@ -38,7 +26,7 @@
         <label class="controls__field">
           <span>Modo no mapa</span>
           <select id="select-mode" aria-label="Modo de interação no mapa">
-            <option value="nav" selected>Navegar (clique no marcador preenche CD ou entrega)</option>
+            <option value="nav" selected>Navegar (clique em CD = define origem)</option>
             <option value="link">Ligar dois nós (dois cliques em marcadores)</option>
             <option value="remove-edge">Remover aresta (clique na linha)</option>
           </select>
@@ -54,24 +42,13 @@
     <footer>
       <section class="metrics" id="metrics" aria-label="Métricas dos algoritmos">
         <div class="metrics__item">
-          <span class="metrics__label">Dijkstra (menor caminho)</span>
+          <span class="metrics__label">Dijkstra (CD → CD)</span>
           <span class="metrics__value" id="metric-dijkstra">—</span>
         </div>
         <div class="metrics__item">
-          <span class="metrics__label">MST — Kruskal (só CDs)</span>
+          <span class="metrics__label">MST Kruskal (entre CDs)</span>
           <span class="metrics__value" id="metric-mst">—</span>
         </div>
-<<<<<<< Updated upstream
-        <div class="metrics__item">
-          <span class="metrics__label">Alcance (BFS desde todos os CDs)</span>
-          <span class="metrics__value" id="metric-bfs">—</span>
-        </div>
-        <div class="metrics__item">
-          <span class="metrics__label">DFS (a partir do CD de origem)</span>
-          <span class="metrics__value" id="metric-dfs">—</span>
-        </div>
-=======
->>>>>>> Stashed changes
       </section>
       <p id="status" class="footer__status">Carregando grafo…</p>
     </footer>

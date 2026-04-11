@@ -21,9 +21,10 @@ header {
 }
 
 header h1 {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.85rem;
   font-size: 1.25rem;
   font-weight: 600;
+  letter-spacing: 0.04em;
 }
 
 header p {
@@ -133,42 +134,32 @@ img.leaflet-marker-icon.map-glyph.map-glyph--pending {
   border-radius: 2px;
 }
 
+img.leaflet-marker-icon.map-glyph.map-glyph--unreachable {
+  opacity: 0.55;
+  filter: grayscale(0.4) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.map-truck-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.map-truck-marker .map-truck-rot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+}
+
+.map-truck-marker .map-truck-rot img.map-truck-img {
+  display: block;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
 #map.map--tool-add {
   cursor: crosshair;
-}
-
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0.65rem 1rem;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #2a3441;
-}
-
-.metrics__item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.metrics__label {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #6b7c8f;
-}
-
-.metrics__value {
-  font-size: 0.8125rem;
-  color: #c8d4e0;
-  line-height: 1.35;
-  word-break: break-word;
-}
-
-.map-marker-dot--unreachable {
-  opacity: 0.5;
-  box-shadow: 0 0 0 2px rgba(220, 80, 80, 0.85);
 }
 
 .metrics {

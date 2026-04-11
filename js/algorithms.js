@@ -1,3 +1,5 @@
+import { haversineKm } from "./geo.js";
+
 class UnionFind {
   constructor(ids) {
     this.parent = new Map();
@@ -111,6 +113,46 @@ export function kruskalMSTAmongCDs(graph) {
     totalKm,
     cdsConnected,
     cdCount: cdSet.size,
+  };
+}
+
+export function kruskalMSTAmongEntregas(graph) {
+  const verts = graph.listEntregas();
+  const ids = verts.map((v) => v.id);
+  if (ids.length <= 1) {
+    return {
+      edges: [],
+      totalKm: 0,
+      entregaCount: ids.length,
+      connected: true,
+    };
+  }
+  const pairs = [];
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      const A = graph.vertices.get(ids[i]);
+      const B = graph.vertices.get(ids[j]);
+      const w = haversineKm(A.lat, A.lng, B.lat, B.lng);
+      pairs.push({ from: ids[i], to: ids[j], pesoKm: w });
+    }
+  }
+  pairs.sort((a, b) => a.pesoKm - b.pesoKm);
+  const uf = new UnionFind(new Set(ids));
+  const mst = [];
+  let totalKm = 0;
+  for (const e of pairs) {
+    if (uf.union(e.from, e.to)) {
+      mst.push(e);
+      totalKm += e.pesoKm;
+      if (mst.length === ids.length - 1) break;
+    }
+  }
+  const connected = mst.length === ids.length - 1;
+  return {
+    edges: mst,
+    totalKm,
+    entregaCount: ids.length,
+    connected,
   };
 }
 

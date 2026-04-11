@@ -1,34 +1,13 @@
 import { Graph } from "./graph.js";
-<<<<<<< Updated upstream
-import {
-  dijkstra,
-  kruskalMSTAmongCDs,
-  reachableFromSources,
-  dfsOrderFrom,
-} from "./algorithms.js";
-import seedData from "../data/seed.js";
-=======
 import { dijkstra, kruskalMSTAmongCDs } from "./algorithms.js";
 import seedData from "../data/seed.js";
-import { haversineKm } from "./geo.js";
->>>>>>> Stashed changes
+import { haversineKm, bearingDeg } from "./geo.js";
 
 const L = globalThis.L;
 
 const statusEl = document.getElementById("status");
 const selectOrigin = document.getElementById("select-origin");
 const selectDest = document.getElementById("select-dest");
-<<<<<<< Updated upstream
-const metricDijkstra = document.getElementById("metric-dijkstra");
-const metricMst = document.getElementById("metric-mst");
-const metricBfs = document.getElementById("metric-bfs");
-const metricDfs = document.getElementById("metric-dfs");
-
-const COL_EDGE = "#3d4f66";
-const COL_EDGE_INACTIVE = "#2d3540";
-const COL_MST = "#d4a84b";
-const COL_DIJKSTRA = "#3ddc97";
-=======
 const btnCalcRoute = document.getElementById("btn-calc-route");
 const btnToggleMst = document.getElementById("btn-toggle-mst");
 const selectMode = document.getElementById("select-mode");
@@ -42,8 +21,7 @@ const COL_MST = "#d4a84b";
 const COL_DIJKSTRA = "#3ddc97";
 
 const ICON_CD = new URL("../assets/cd.png", import.meta.url).href;
-const ICON_ENTREGA = new URL("../assets/entrega.png", import.meta.url).href;
->>>>>>> Stashed changes
+const ICON_TRUCK = new URL("../assets/caminhao.png", import.meta.url).href;
 
 let graph;
 let map;
@@ -52,17 +30,162 @@ let mstLayer;
 let routeLayer;
 let markersLayer;
 const markerById = new Map();
-<<<<<<< Updated upstream
-let originId = "";
-let destId = "";
-let reachableFromCDs = new Set();
-=======
 let interactionMode = "nav";
 let linkPendingId = null;
 let showMST = false;
 let routeFrom = "";
 let routeTo = "";
->>>>>>> Stashed changes
+/** Só atualizado em «Calcular»; evita limpar a rota em eventos espúrios de change. */
+let routeCommittedO = "";
+let routeCommittedD = "";
+
+let routeAnimGen = 0;
+let routeAnimRaf = null;
+let truckMarker = null;
+
+function baseMarkerPx(zoom) {
+  const z = Number.isFinite(zoom) ? zoom : 4;
+  return Math.max(24, Math.min(72, Math.round(12 + z * 5.5)));
+}
+
+function cdIconPixelSize(zoom) {
+  return baseMarkerPx(zoom);
+}
+
+function truckIconPixelSize(zoom) {
+  return Math.round(baseMarkerPx(zoom) * 1.28);
+}
+
+function cancelRouteAnimation() {
+  if (routeAnimRaf !== null) {
+    cancelAnimationFrame(routeAnimRaf);
+    routeAnimRaf = null;
+  }
+  routeAnimGen += 1;
+  if (truckMarker && routeLayer && routeLayer.hasLayer(truckMarker)) {
+    routeLayer.removeLayer(truckMarker);
+  }
+  truckMarker = null;
+}
+
+function densifyPathLatLngs(g, pathIds) {
+  const out = [];
+  if (!pathIds.length) return out;
+  const first = g.vertices.get(pathIds[0]);
+  if (!first) return out;
+  out.push([first.lat, first.lng]);
+  for (let i = 1; i < pathIds.length; i++) {
+    const prev = g.vertices.get(pathIds[i - 1]);
+    const v = g.vertices.get(pathIds[i]);
+    if (!prev || !v) continue;
+    const km = haversineKm(prev.lat, prev.lng, v.lat, v.lng);
+    const steps = Math.min(160, Math.max(28, Math.round(km * 14)));
+    for (let s = 1; s <= steps; s++) {
+      const t = s / steps;
+      out.push([
+        prev.lat + (v.lat - prev.lat) * t,
+        prev.lng + (v.lng - prev.lng) * t,
+      ]);
+    }
+  }
+  return out;
+}
+
+function smoothProgress(u) {
+  return u * u * (3 - 2 * u);
+}
+
+function sampleAlongPolyline(points, u) {
+  const n = points.length;
+  if (n < 2) {
+    const p = points[0];
+    return {
+      lat: p[0],
+      lng: p[1],
+      bearing: 0,
+      trail: points.slice(),
+    };
+  }
+  const su = smoothProgress(Math.min(1, Math.max(0, u)));
+  const f = su * (n - 1);
+  const i = Math.min(n - 2, Math.floor(f));
+  const segT = f - i;
+  const [la0, lo0] = points[i];
+  const [la1, lo1] = points[i + 1];
+  const lat = la0 + (la1 - la0) * segT;
+  const lng = lo0 + (lo1 - lo0) * segT;
+  const bearing = bearingDeg(la0, lo0, la1, lo1);
+  const trail = points.slice(0, i + 1);
+  trail.push([lat, lng]);
+  return { lat, lng, bearing, trail };
+}
+
+function setTruckRotation(marker, deg) {
+  const root = marker?.getElement?.();
+  if (!root) return;
+  const rot = root.querySelector(".map-truck-rot");
+  if (rot) rot.style.transform = `rotate(${deg}deg)`;
+}
+
+function startRouteAnimation(pathIds) {
+  const myGen = routeAnimGen;
+  const points = densifyPathLatLngs(graph, pathIds);
+  if (points.length < 2 || !map || !routeLayer) return;
+
+  const px = truckIconPixelSize(map.getZoom());
+  const s0 = sampleAlongPolyline(points, 0);
+
+  const poly = L.polyline([], {
+    color: COL_DIJKSTRA,
+    weight: 6,
+    opacity: 0.95,
+    lineCap: "round",
+    lineJoin: "round",
+  }).addTo(routeLayer);
+
+  truckMarker = L.marker([s0.lat, s0.lng], {
+    icon: L.divIcon({
+      className: "map-truck-marker",
+      html: `<div class="map-truck-rot" style="transform:rotate(${s0.bearing}deg);width:${px}px;height:${px}px"><img class="map-truck-img" src="${ICON_TRUCK}" width="${px}" height="${px}" alt="" /></div>`,
+      iconSize: [px, px],
+      iconAnchor: [px / 2, px / 2],
+    }),
+    zIndexOffset: 800,
+  }).addTo(routeLayer);
+
+  const totalMs = Math.min(11000, Math.max(4000, points.length * 10));
+  const t0 = performance.now();
+
+  function frame(now) {
+    if (myGen !== routeAnimGen) return;
+    const elapsed = now - t0;
+    const u = Math.min(1, elapsed / totalMs);
+    const { lat, lng, bearing, trail } = sampleAlongPolyline(points, u);
+    poly.setLatLngs(trail);
+    truckMarker.setLatLng([lat, lng]);
+    setTruckRotation(truckMarker, bearing);
+
+    if (u < 1) {
+      routeAnimRaf = requestAnimationFrame(frame);
+    } else {
+      routeAnimRaf = null;
+      poly.setLatLngs(points);
+      const end = points[points.length - 1];
+      truckMarker.setLatLng(end);
+      if (points.length >= 2) {
+        const bEnd = bearingDeg(
+          points[points.length - 2][0],
+          points[points.length - 2][1],
+          end[0],
+          end[1]
+        );
+        setTruckRotation(truckMarker, bEnd);
+      }
+    }
+  }
+
+  routeAnimRaf = requestAnimationFrame(frame);
+}
 
 function loadGraph() {
   return Promise.resolve(Graph.fromJSON(seedData, { recomputeWeights: true }));
@@ -71,9 +194,7 @@ function loadGraph() {
 function summarize(g) {
   const n = g.vertices.size;
   const m = g.edgeCount;
-  const cds = g.listCDs().length;
-  const ent = g.listEntregas().length;
-  return `${n} nós (${cds} CDs capitais, ${ent} entregas), ${m} arestas — km (Haversine).`;
+  return `${n} CDs (capitais), ${m} arestas — km (Haversine).`;
 }
 
 function vertexLabel(v) {
@@ -81,36 +202,24 @@ function vertexLabel(v) {
   return `${v.id.replace(/^(cd-|ent-)/, "")} (${v.tipo})`;
 }
 
-<<<<<<< Updated upstream
-function makeDivIcon(v, selected, unreachable) {
-  const base = v.tipo === "CD" ? "map-marker-dot--cd" : "map-marker-dot--entrega";
-  const sel = selected ? " map-marker-dot--selected" : "";
-  const unr =
-    v.tipo === "ENTREGA" && unreachable ? " map-marker-dot--unreachable" : "";
-  return L.divIcon({
-    className: "map-marker-wrap",
-    html: `<div class="map-marker-dot ${base}${sel}${unr}" role="img" aria-label="${vertexLabel(v)}"></div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-=======
-function makeMarkerIcon(v, selected, linkPending) {
-  const src = v.tipo === "CD" ? ICON_CD : ICON_ENTREGA;
-  const w = selected ? 18 : 15;
+function makeMarkerIcon(v, selected, linkPending, zoom) {
+  const z = Number.isFinite(zoom) ? zoom : 4;
+  const base = cdIconPixelSize(z);
+  const w = selected ? Math.round(base * 1.12) : base;
   const h = w;
   const cls = [
     "map-glyph",
-    v.tipo === "CD" ? "map-glyph--cd" : "map-glyph--ent",
+    "map-glyph--cd",
     selected ? "map-glyph--selected" : "",
     linkPending ? "map-glyph--pending" : "",
   ]
     .filter(Boolean)
     .join(" ");
   return L.icon({
-    iconUrl: src,
+    iconUrl: ICON_CD,
     iconSize: [w, h],
     iconAnchor: [w / 2, h / 2],
     className: cls,
->>>>>>> Stashed changes
   });
 }
 
@@ -141,26 +250,23 @@ function fillSelects(g) {
 
   const optEmptyD = document.createElement("option");
   optEmptyD.value = "";
-  optEmptyD.textContent = "— Escolha a entrega —";
+  optEmptyD.textContent = "— Escolha o CD —";
   selectDest.appendChild(optEmptyD);
 
   const cds = g.listCDs().sort((a, b) => a.id.localeCompare(b.id));
-  const ents = g.listEntregas().sort((a, b) => a.id.localeCompare(b.id));
   for (const v of cds) {
-    const opt = document.createElement("option");
-    opt.value = v.id;
-    opt.textContent = vertexLabel(v);
-    selectOrigin.appendChild(opt);
-  }
-  for (const v of ents) {
-    const opt = document.createElement("option");
-    opt.value = v.id;
-    opt.textContent = vertexLabel(v);
-    selectDest.appendChild(opt);
+    const o1 = document.createElement("option");
+    o1.value = v.id;
+    o1.textContent = vertexLabel(v);
+    selectOrigin.appendChild(o1);
+    const o2 = document.createElement("option");
+    o2.value = v.id;
+    o2.textContent = vertexLabel(v);
+    selectDest.appendChild(o2);
   }
 
   selectOrigin.value = cds.some((c) => c.id === savedO) ? savedO : "";
-  selectDest.value = ents.some((e) => e.id === savedD) ? savedD : "";
+  selectDest.value = cds.some((c) => c.id === savedD) ? savedD : "";
 }
 
 function populateEdgeSelect() {
@@ -190,15 +296,9 @@ function refreshMarkerIcons() {
   for (const [id, m] of markerById) {
     const v = graph.vertices.get(id);
     if (!v) continue;
-<<<<<<< Updated upstream
-    const sel = id === originId || id === destId;
-    const unr = v.tipo === "ENTREGA" && !reachableFromCDs.has(id);
-    m.setIcon(makeDivIcon(v, sel, unr));
-=======
     const sel = markerSelected(id);
     const pend = id === linkPendingId;
-    m.setIcon(makeMarkerIcon(v, sel, pend));
->>>>>>> Stashed changes
+    m.setIcon(makeMarkerIcon(v, sel, pend, map?.getZoom?.() ?? 4));
   }
 }
 
@@ -209,17 +309,10 @@ function renderVertices(g, fitBounds) {
   for (const v of g.vertices.values()) {
     const ll = [v.lat, v.lng];
     latlngs.push(ll);
-<<<<<<< Updated upstream
-    const sel = v.id === originId || v.id === destId;
-    const unr = v.tipo === "ENTREGA" && !reachableFromCDs.has(v.id);
-    const mk = L.marker(ll, {
-      icon: makeDivIcon(v, sel, unr),
-=======
     const sel = markerSelected(v.id);
     const pend = v.id === linkPendingId;
     const mk = L.marker(ll, {
-      icon: makeMarkerIcon(v, sel, pend),
->>>>>>> Stashed changes
+      icon: makeMarkerIcon(v, sel, pend, map.getZoom()),
       title: vertexLabel(v),
     });
     mk.on("click", (ev) => {
@@ -228,30 +321,21 @@ function renderVertices(g, fitBounds) {
         handleLinkClick(v.id);
         return;
       }
-      if (interactionMode === "nav") {
-        if (v.tipo === "CD") {
+      if (interactionMode === "nav" && v.tipo === "CD") {
+        const o = pickOrigin();
+        if (!o || o === v.id) {
           selectOrigin.value = v.id;
         } else {
           selectDest.value = v.id;
         }
-        refreshMarkerIcons();
-      } else if (interactionMode === "remove-edge") {
-        /* só por clique na linha */
+        onPickChange();
       }
-<<<<<<< Updated upstream
-      recalcAlgorithms();
-=======
->>>>>>> Stashed changes
     });
     markersLayer.addLayer(mk);
     markerById.set(v.id, mk);
   }
   if (fitBounds && latlngs.length) {
-<<<<<<< Updated upstream
-    map.fitBounds(L.latLngBounds(latlngs), { padding: [28, 28], maxZoom: 8 });
-=======
     map.fitBounds(L.latLngBounds(latlngs), { padding: [40, 40], maxZoom: 4 });
->>>>>>> Stashed changes
   }
 }
 
@@ -267,16 +351,9 @@ function renderEdges(g) {
         [b.lat, b.lng],
       ],
       {
-<<<<<<< Updated upstream
-        color: e.ativa ? COL_EDGE : COL_EDGE_INACTIVE,
-        weight: e.ativa ? 2 : 2,
-        opacity: e.ativa ? 0.55 : 0.3,
-        dashArray: e.ativa ? null : "6 8",
-=======
         color: COL_EDGE,
         weight: 2,
         opacity: 0.55,
->>>>>>> Stashed changes
       }
     );
     poly.bindTooltip(`${e.from} ↔ ${e.to} · ${e.pesoKm.toFixed(1)} km`, {
@@ -295,154 +372,74 @@ function renderEdges(g) {
   }
 }
 
-function drawPathOnLayer(layerGroup, path, style) {
-  if (!path || path.length < 2) return;
-  for (let i = 0; i < path.length - 1; i++) {
-    const A = graph.vertices.get(path[i]);
-    const B = graph.vertices.get(path[i + 1]);
-    if (!A || !B) continue;
-    const poly = L.polyline(
-      [
-        [A.lat, A.lng],
-        [B.lat, B.lng],
-      ],
-      style
-    );
-    layerGroup.addLayer(poly);
-  }
-}
-
-<<<<<<< Updated upstream
-function recalcAlgorithms() {
-  const cdIds = graph.listCDs().map((v) => v.id);
-  reachableFromCDs = reachableFromSources(graph, cdIds);
-
-  const entregas = graph.listEntregas();
-  const entReach = entregas.filter((v) => reachableFromCDs.has(v.id)).length;
-  const entTotal = entregas.length;
-  if (metricBfs) {
-    metricBfs.textContent =
-      entTotal === 0
-        ? "—"
-        : `${entReach} / ${entTotal} entregas alcançáveis (BFS a partir dos CDs)`;
-  }
-
-  const dfsOrder = dfsOrderFrom(graph, originId);
-  if (metricDfs) {
-    metricDfs.textContent =
-      dfsOrder.length === 0
-        ? "—"
-        : `${dfsOrder.length} vértice(s) na DFS a partir do CD de origem`;
-  }
-
-  const dk = dijkstra(graph, originId, destId);
-  if (metricDijkstra) {
-    metricDijkstra.textContent = dk.ok
-      ? `${dk.distance.toFixed(2)} km · ${dk.path.join(" → ")}`
-      : "Sem rota (grafo desconexo ou arestas bloqueadas)";
-=======
 function invalidateRouteIfNeeded() {
   if (routeFrom && !graph.vertices.has(routeFrom)) {
     routeFrom = "";
     routeTo = "";
+    routeCommittedO = "";
+    routeCommittedD = "";
   }
   if (routeTo && !graph.vertices.has(routeTo)) {
+    routeFrom = "";
     routeTo = "";
+    routeCommittedO = "";
+    routeCommittedD = "";
   }
 }
 
 function recalcAlgorithms() {
+  cancelRouteAnimation();
   routeLayer.clearLayers();
   mstLayer.clearLayers();
+
+  let pathToAnimate = null;
 
   if (metricDijkstra) {
     if (!routeFrom || !routeTo) {
       metricDijkstra.textContent =
-        "Selecione o CD, a entrega e clique em «Calcular menor caminho».";
+        "Escolha dois CDs e clique em «Calcular menor caminho» (apenas rede entre capitais).";
     } else if (!graph.vertices.has(routeFrom) || !graph.vertices.has(routeTo)) {
       metricDijkstra.textContent = "Rota inválida após alteração no grafo.";
       routeFrom = "";
       routeTo = "";
+      routeCommittedO = "";
+      routeCommittedD = "";
     } else {
-      const dk = dijkstra(graph, routeFrom, routeTo);
-      metricDijkstra.textContent = dk.ok
-        ? `${dk.distance.toFixed(2)} km · ${dk.path.join(" → ")}`
-        : "Sem rota entre o CD e a entrega (grafo desconexo).";
-      if (dk.ok && dk.path.length >= 2) {
-        drawPathOnLayer(routeLayer, dk.path, {
-          color: COL_DIJKSTRA,
-          weight: 6,
-          opacity: 0.95,
-          lineCap: "round",
-          lineJoin: "round",
-        });
+      const vo = graph.vertices.get(routeFrom);
+      const vd = graph.vertices.get(routeTo);
+      if (vo.tipo !== "CD" || vd.tipo !== "CD") {
+        metricDijkstra.textContent = "Dijkstra configurado só entre CDs.";
+      } else if (routeFrom === routeTo) {
+        metricDijkstra.textContent = "Origem e destino devem ser CDs diferentes.";
+      } else {
+        const dk = dijkstra(graph, routeFrom, routeTo);
+        metricDijkstra.textContent = dk.ok
+          ? `${dk.distance.toFixed(2)} km · ${dk.path.join(" → ")}`
+          : "Sem rota entre os dois CDs neste grafo.";
+        if (dk.ok && dk.path.length >= 2) {
+          pathToAnimate = dk.path;
+        }
       }
     }
->>>>>>> Stashed changes
   }
 
   const mst = kruskalMSTAmongCDs(graph);
   if (metricMst) {
-<<<<<<< Updated upstream
-    if (mst.cdCount <= 1) {
-      metricMst.textContent = "— (apenas um CD)";
-    } else if (!mst.cdsConnected) {
-      metricMst.textContent = `${mst.totalKm.toFixed(2)} km — CDs não formam um único componente (floresta)`;
-    } else {
-      metricMst.textContent = `${mst.totalKm.toFixed(2)} km (${mst.edges.length} arestas, Kruskal só entre CDs)`;
-    }
-  }
-
-  routeLayer.clearLayers();
-  mstLayer.clearLayers();
-
-  for (const e of mst.edges) {
-    const a = graph.vertices.get(e.from);
-    const b = graph.vertices.get(e.to);
-    if (!a || !b) continue;
-    const poly = L.polyline(
-      [
-        [a.lat, a.lng],
-        [b.lat, b.lng],
-      ],
-      {
-        color: COL_MST,
-        weight: 5,
-        opacity: 0.88,
-        dashArray: "10 7",
-        lineCap: "round",
-      }
-    );
-    poly.bindTooltip(`MST · ${e.from} ↔ ${e.to} · ${e.pesoKm.toFixed(1)} km`, {
-      sticky: true,
-    });
-    mstLayer.addLayer(poly);
-  }
-
-  if (dk.ok && dk.path.length >= 2) {
-    drawPathOnLayer(routeLayer, dk.path, {
-      color: COL_DIJKSTRA,
-      weight: 6,
-      opacity: 0.95,
-      lineCap: "round",
-      lineJoin: "round",
-    });
-=======
     if (!showMST) {
       metricMst.textContent =
         mst.cdCount <= 1
           ? "—"
-          : "Oculto no mapa — use «Mostrar MST (Kruskal)» para ver e obter o custo.";
+          : "Oculto — use «Mostrar MST (Kruskal)». Árvore mínima entre CDs usando só arestas CD–CD do grafo.";
     } else if (mst.cdCount <= 1) {
       metricMst.textContent = "— (apenas um CD)";
     } else if (!mst.cdsConnected) {
       metricMst.textContent = `${mst.totalKm.toFixed(2)} km — floresta (CDs em mais de um componente)`;
     } else {
-      metricMst.textContent = `${mst.totalKm.toFixed(2)} km · ${mst.edges.length} arestas (Kruskal entre CDs)`;
+      metricMst.textContent = `${mst.totalKm.toFixed(2)} km · ${mst.edges.length} arestas · ${mst.cdCount} CDs`;
     }
   }
 
-  if (showMST) {
+  if (showMST && mst.edges.length) {
     for (const e of mst.edges) {
       const a = graph.vertices.get(e.from);
       const b = graph.vertices.get(e.to);
@@ -460,19 +457,24 @@ function recalcAlgorithms() {
           lineCap: "round",
         }
       );
-      poly.bindTooltip(`MST · ${e.from} ↔ ${e.to} · ${e.pesoKm.toFixed(1)} km`, {
+      poly.bindTooltip(`MST CDs · ${e.from} ↔ ${e.to} · ${e.pesoKm.toFixed(1)} km`, {
         sticky: true,
       });
       mstLayer.addLayer(poly);
     }
->>>>>>> Stashed changes
   }
 
   refreshMarkerIcons();
+
+  if (pathToAnimate) {
+    const snapGen = routeAnimGen;
+    requestAnimationFrame(() => {
+      if (routeAnimGen !== snapGen) return;
+      startRouteAnimation(pathToAnimate);
+    });
+  }
 }
 
-<<<<<<< Updated upstream
-=======
 function fullRefresh(fitBounds = false) {
   invalidateRouteIfNeeded();
   fillSelects(graph);
@@ -512,7 +514,23 @@ function handleLinkClick(id) {
   fullRefresh();
 }
 
->>>>>>> Stashed changes
+function onPickChange() {
+  const o = pickOrigin();
+  const d = pickDest();
+  if (
+    routeCommittedO &&
+    routeCommittedD &&
+    (o !== routeCommittedO || d !== routeCommittedD)
+  ) {
+    routeFrom = "";
+    routeTo = "";
+    routeCommittedO = "";
+    routeCommittedD = "";
+  }
+  refreshMarkerIcons();
+  recalcAlgorithms();
+}
+
 function initMap(g) {
   graph = g;
   const center = [-14.5, -54];
@@ -529,31 +547,19 @@ function initMap(g) {
   routeLayer = L.layerGroup().addTo(map);
   markersLayer = L.layerGroup().addTo(map);
 
-<<<<<<< Updated upstream
-  fillSelects(g);
-  reachableFromCDs = reachableFromSources(graph, graph.listCDs().map((v) => v.id));
-  renderEdges(g);
-  renderVertices(g, true);
-  recalcAlgorithms();
-
-  const onSelectionChange = () => {
-    originId = selectOrigin.value;
-    destId = selectDest.value;
-=======
   routeFrom = "";
   routeTo = "";
+  routeCommittedO = "";
+  routeCommittedD = "";
   showMST = false;
   if (btnToggleMst) btnToggleMst.textContent = "Mostrar MST (Kruskal)";
 
   fullRefresh(true);
 
-  const onPickChange = () => {
-    routeFrom = "";
-    routeTo = "";
+  map.on("zoomend", () => {
     refreshMarkerIcons();
->>>>>>> Stashed changes
-    recalcAlgorithms();
-  };
+  });
+
   selectOrigin.addEventListener("change", onPickChange);
   selectDest.addEventListener("change", onPickChange);
 
@@ -563,18 +569,26 @@ function initMap(g) {
       const d = pickDest();
       if (!o || !d) {
         if (metricDijkstra) {
-          metricDijkstra.textContent = "Selecione CD e entrega antes de confirmar.";
+          metricDijkstra.textContent = "Selecione dois CDs antes de confirmar.";
         }
         return;
       }
       const vo = graph.vertices.get(o);
       const vd = graph.vertices.get(d);
-      if (!vo || !vd || vo.tipo !== "CD" || vd.tipo !== "ENTREGA") {
+      if (!vo || !vd || vo.tipo !== "CD" || vd.tipo !== "CD") {
         if (metricDijkstra) {
-          metricDijkstra.textContent = "Origem deve ser um CD e destino uma entrega.";
+          metricDijkstra.textContent = "Origem e destino devem ser CDs.";
         }
         return;
       }
+      if (o === d) {
+        if (metricDijkstra) {
+          metricDijkstra.textContent = "Escolha dois CDs diferentes.";
+        }
+        return;
+      }
+      routeCommittedO = o;
+      routeCommittedD = d;
       routeFrom = o;
       routeTo = d;
       recalcAlgorithms();
