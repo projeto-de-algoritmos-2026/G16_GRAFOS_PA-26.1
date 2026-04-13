@@ -7,7 +7,7 @@ Conteúdo da Disciplina: Grafos (dijkstra & kruskal)<br>
 
 | Matrícula   | Aluno                 |
 | ----------- | --------------------- |
-| 24/2015773  | Caio Breno de Souza   |
+| 24/2015773  | Caio Breno de Souza Bezerra  |
 | 24/2014138  | Bruno Ferreira Dornelas |
 
 ## Sobre
@@ -66,7 +66,5 @@ O servidor estático sobe na porta **3000** (conforme `package.json`). Abra no n
 ## Outros
 
 - **Vídeo da apresentação:** [YouTube — apresentação do projeto](https://www.youtube.com/watch?v=iAldR33za0E)
-- **Nome na interface:** o título da página em `index.html` está como *AMAZONAS EXPRESS*, alinhado ao tema da malha nacional; o nome do trabalho no repositório segue *Amazon Express* conforme a lista.
-- **Pesos:** ao carregar, os pesos podem ser recalculados por Haversine a partir das coordenadas (`Graph.fromJSON` com `recomputeWeights: true` em `app.js`).
 - Estrutura útil do repositório: `index.html`, `css/styles.css`, `js/app.js`, `js/graph.js`, `js/algorithms.js`, `js/geo.js`, `data/seed.js`, `assets/` (ícones, capturas de tela).
 
