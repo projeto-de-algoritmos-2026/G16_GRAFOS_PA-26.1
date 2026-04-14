@@ -8,7 +8,7 @@ Conteúdo da Disciplina: Grafos (dijkstra & kruskal)<br>
 | Matrícula   | Aluno                 |
 | ----------- | --------------------- |
 | 24/2015773  | Caio Breno de Souza Bezerra  |
-| 24/2014138  | Bruno Ferreira Dornelas |
+| 24/2015138  | Bruno Ferreira Dornelas |
 
 ## Sobre
 
